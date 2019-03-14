@@ -23,6 +23,8 @@ contract DividendPayingToken is ERC20Mintable, DividendPayingTokenInterface, Div
 
   uint256 internal magnifiedDividendPerShare;
 
+  uint256 internal dust;
+
   // About dividendCorrection:
   // If the token balance of a `_user` is never changed, the dividend of `_user` can be computed with:
   //   `dividendOf(_user) = dividendPerShare * balanceOf(_user)`.
@@ -59,9 +61,10 @@ contract DividendPayingToken is ERC20Mintable, DividendPayingTokenInterface, Div
     require(totalSupply() > 0);
 
     if (msg.value > 0) {
-      magnifiedDividendPerShare = magnifiedDividendPerShare.add(
-        (msg.value).mul(magnitude) / totalSupply()
-      );
+      uint256 value = (msg.value).add(dust);
+      uint256 increasingDivident = value.mul(magnitude) / totalSupply();
+      dust = value.sub(increasingDivident.mul(totalSupply()) / magnitude);
+      magnifiedDividendPerShare = magnifiedDividendPerShare.add(increasingDivident);
       emit DividendsDistributed(msg.sender, msg.value);
     }
   }
